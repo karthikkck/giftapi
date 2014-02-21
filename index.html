@@ -65,7 +65,7 @@
             </div>
           </div>
 
-          <div class="col-lg-4 col-lg-offset-1">
+          <div id="packs" class="col-lg-4 col-lg-offset-1">
 
           </div>
         </div>
@@ -82,10 +82,35 @@
 
     </div>
 
-	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+	<script id="simple-hello" type="text/html">
+		<p>Hello, {{name}}, how are you?</p>
+	</script>
+
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+
+	<!-- mustache templating -->
+	<script src="https://raw.github.com/jonnyreeves/jquery-Mustache/master/jquery.mustache.js"></script>
+	<script src="https://raw.github.com/janl/mustache.js/master/mustache.js"></script>
+
+	<!-- localstorage library -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/json2/20110223/json2.js"></script>
+	<script src="https://raw.github.com/andris9/jStorage/master/jstorage.js"></script>
+
 	<script>
 		(function() {
-			alert("hi");
+			var viewData = { name: "hi" };
+			$.Mustache.addFromDom('simple-hello');
+			$('#packs').mustache('simple-hello', viewData);
+
+			var apiKeywords = {
+				women: ['Clothing', 'Shoes', 'Boots', 'Sneakers', 'Athletic Shoes', 'Dresses'],
+				men: ['Clothing', 'Shoes', 'Sneakers', 'Athletic Shoes', 'Boots', 'Jeans'],
+				kids: ['Girls', 'Clothing Boys', 'Clothing Girls', 'Shoes Boys', 'Shoes']
+			};
+
+			$.jStorage.set("mykey", "keyvalue", { ttl: 100000 });
+
 		}());
 	</script>
 </body></html>
