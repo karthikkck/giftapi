@@ -38,21 +38,23 @@
       ================================================== -->
       <div class="bs-docs-section">
         <div class="row">
-          <div class="col-lg-6">
-            <div class="well">
-              <form class="bs-example form-horizontal">
+          <div class="col-lg-12">
+            <div class="well" style="height: 140px">
+              <form id="GetPacksForm" class="bs-example form-inline">
                 <fieldset>
                   <legend>Fill to find a pack</legend>
                   <div class="form-group">
                     <label for="inputEmail" class="col-lg-3 control-label">No. of Gifts</label>
                     <div class="col-lg-9">
-                      <input class="form-control" id="inputEmail" placeholder="Number of Gifts" type="text">
+					  <input class="form-control" id="inputCount" placeholder="Number of Gifts" type="text">
+					  <span class="help-block error"></span>
                     </div>
                   </div>
                   <div class="form-group">
                     <label for="inputPassword" class="col-lg-3 control-label">Approx. Budget</label>
                     <div class="col-lg-9">
-                      <input class="form-control" id="inputPassword" placeholder="Your approximate budget" type="password">
+                      <input class="form-control" id="inputBudget" placeholder="Your approximate budget" type="text">
+					  <span class="help-block error"></span>
                    </div>
                   </div>
 				  <div class="form-group">
@@ -64,11 +66,37 @@
               </form>
             </div>
           </div>
+        </div>
 
-          <div id="packs" class="col-lg-4 col-lg-offset-1">
-
+		<div class="row">
+          <div class="col-lg-12">
+            <h2>Wells</h2>
           </div>
         </div>
+		<div class="row">
+          <div class="col-lg-3">
+            <div class="well">
+              Look, I'm in a well!
+            </div>
+          </div>
+          <div class="col-lg-3">
+            <div class="well well-sm">
+              Look, I'm in a small well!
+            </div>
+          </div>
+          <div class="col-lg-3">
+            <div class="well well-lg">
+              Look, I'm in a large well!
+            </div>
+          </div>
+          <div class="col-lg-3">
+            <div class="well well-lg">
+              Look, I'm in a large well!
+            </div>
+          </div>
+
+        </div>
+
       </div>
 
       <footer>
@@ -98,19 +126,139 @@
 	<script src="https://raw.github.com/andris9/jStorage/master/jstorage.js"></script>
 
 	<script>
-		(function() {
+		var myapp;
+		(function(myapp) {
+			/*
 			var viewData = { name: "hi" };
 			$.Mustache.addFromDom('simple-hello');
 			$('#packs').mustache('simple-hello', viewData);
+			$.jStorage.set("mykey", "keyvalue", { ttl: 100000 });
+			*/
 
+			//global settings
 			var apiKeywords = {
 				women: ['Clothing', 'Shoes', 'Boots', 'Sneakers', 'Athletic Shoes', 'Dresses'],
 				men: ['Clothing', 'Shoes', 'Sneakers', 'Athletic Shoes', 'Boots', 'Jeans'],
-				kids: ['Girls', 'Clothing Boys', 'Clothing Girls', 'Shoes Boys', 'Shoes']
+				kids: ['Girls', 'Clothing Boys', 'Clothing Girls', 'Shoes Boys', 'Shoes'],
+				special: ['Fashion', 'Shop', 'Golf', 'Outdoor', 'Rideshop', 'Running', 'Shop By', 'Wedding', 'Western']
 			};
+			var apiKey = 'a73121520492f88dc3d33daf2103d7574f1a3166';
+			var searchApiUrl = 'http://api.zappos.com/Search';
+			var budgetVariation = "10";
 
-			$.jStorage.set("mykey", "keyvalue", { ttl: 100000 });
+			function randomizedArray(arrLength) {
+				var arr = [], i;
+				for (i = 0; i < arrLength; i++) {
+					arr[i] = i;
+				}
 
-		}());
+				arr.sort(function () {
+					return Math.random() - 0.5;
+				});
+				return arr;
+			}
+
+			//events binding
+			$("#GetPacksForm").submit(function(e) {
+				var targetElement = $(e.target), count, budget;
+
+				e.preventDefault();
+				count = targetElement.find('#inputCount').val();
+				budget = targetElement.find('#inputBudget').val();
+
+				count = parseInt(count);
+				budget = parseInt(budget);
+				targetElement.find('.error').html('');
+				if(isNaN(count)) {
+					targetElement.find('#inputCount').siblings('.error').html('Enter number Eg: 3');
+					return;
+				} else if(isNaN(parseInt(budget))) {
+					targetElement.find('#inputBudget').siblings('.error').html('Enter number Eg: 100');
+					return;
+				}
+
+				myapp.show(count, budget);
+			});
+
+			//myapp code
+			$.extend(myapp, {
+
+				//types: ['women', 'men', 'kids'],
+				types: ['women'],
+
+				show: function(count, budget) {
+					if(!this.data || $.isEmptyObject(this.data)) {
+						this.data = {};
+						this.fetchData(count,budget);
+					} else {
+						console.log(this.data);
+					}
+				},
+
+				fetchData: function(count,budget) {
+					var i = 0, j =0, url, tmp, type, category, randomNoArr;
+
+					function getData(term) {
+						var sortType, filterType, priceRange, tmp,
+							priceRangeString;
+
+						switch(true) {
+							case (budget > 0 && budget <= 25):
+								sortType = "asc";
+								filterType = "$50.00 and Under";
+								break;
+							case (budget > 25 && budget <= 50):
+								sortType = "desc";
+								filterType = "$50.00 and Under";
+								break;
+							case (budget > 50 && budget <= 100):
+								sortType = "desc";
+								filterType = "$100.00 and Under";
+								break;
+							case (budget > 100 && budget <= 200):
+								sortType = "desc";
+								filterType = "$200.00 and Under";
+								break;
+							case (budget > 200 && budget <= 1000):
+								sortType = "asc";
+								filterType = "$200.00 and Over";
+								break;
+							default:
+								sortType = "desc";
+								filterType = "$200.00 and Over";
+								break;
+						}
+
+						tmp = (budget*budgetVariation)/100;
+						priceRange = Math.ceil(tmp/count);
+
+						priceRangeString = '"' + budget + '"';
+						for(i=0; i < Math.ceil(priceRange/2); i++) {
+							priceRangeString += ',"' + (budget-i-1) + '"';
+							priceRangeString += ',"' + (budget+i+1) + '"';
+						}
+
+						return $.get(searchApiUrl, {sort:'{"price":"' + sortType + '"}',term:term,limit:100,filters:'{"priceFacet":["' + filterType + '"], "priceSort":[' + priceRangeString + ']}',key:apiKey}, null, 'jsonp');
+					}
+
+					randomNoArr = randomizedArray(5);
+					for(i = 0; i< this.types.length; i++) {
+						type = this.types[i];
+						category = apiKeywords[type];
+						tmp = category.length;
+						$.when(
+						getData(type + ' ' + (category[randomNoArr[0]])),
+						getData(type + ' ' + (category[randomNoArr[1]]))
+						).done(function(data1, data2, data3, data4, data5){
+							console.log(data1);
+							console.log(data2);
+							console.log(data3);
+						});
+					}
+
+				}
+			});
+
+		}(myapp || {}));
 	</script>
 </body></html>
