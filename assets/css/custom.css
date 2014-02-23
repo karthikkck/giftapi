@@ -26,3 +26,7 @@
 .error {
 	color: #FF2424;
 }
+#Packs .well {
+	height: 220px;
+	margin-top: 25px;
+}
