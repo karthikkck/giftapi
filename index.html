@@ -60,6 +60,7 @@
 				  <div class="form-group">
                     <div class="col-lg-10 col-lg-offset-3">
                       <button class="btn btn-primary" type="submit">Get Pack</button>
+                      <button class="btn btn-default" style="display:none" type="submit">Get Next Pack</button>
                     </div>
                   </div>
                 </fieldset>
@@ -87,8 +88,10 @@
 	<script id="Product-list-template" type="text/html">
 		<div class="row">
           <div class="col-lg-12">
-			  <h2>{{category}} - package total price: {{totalPrice}}</h2>
+			  <h2>For {{category}} - package total price: {{totalPrice}}</h2>
+			  {{#message}}
 			  <h4>{{message}}</h4>
+			  {{/message}}
           </div>
         </div>
 		<div class="row">
@@ -119,190 +122,35 @@
 	<!-- localstorage library -->
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/json2/20110223/json2.js"></script>
 	<script src="https://raw.github.com/andris9/jStorage/master/jstorage.js"></script>
+	<script src="assets/js/config.js"></script>
+	<script src="assets/js/main.js"></script>
 
 	<script>
-		var myapp;
-		(function(myapp) {
-			/*
-			var viewData = { name: "hi" };
-			$.Mustache.addFromDom('simple-hello');
-			$('#packs').mustache('simple-hello', viewData);
-			$.jStorage.set("mykey", "keyvalue", { ttl: 100000 });
-			*/
+		//initialize mustache templates
+		$.Mustache.addFromDom('Product-list-template');
 
-			$.Mustache.addFromDom('Product-list-template');
+		//events binding
+		$("#GetPacksForm").submit(function(e) {
+			var targetElement = $(e.target), count, budget;
 
-			//global settings
-			var apiKeywords = {
-				//women: ['Clothing', 'Shoes', 'Boots', 'Sneakers', 'Athletic Shoes', 'Dresses'],
-				women: ['Clothing', 'Shoes', 'Accessories', 'Eyewear', 'Bags', 'Watches', 'Sporting Goods', 'Beauty', 'Jewelry', 'Electronics'],
-				//men: ['Clothing', 'Shoes', 'Sneakers', 'Athletic Shoes', 'Boots', 'Jeans'],
-				men: ['Clothing', 'Shoes', 'Accessories', 'Eyewear', 'Bags', 'Watches', 'Sporting Goods', 'Beauty', 'Jewelry', 'Electronics'],
-				//kids: ['Girls', 'Clothing Boys', 'Clothing Girls', 'Shoes Boys', 'Shoes'],
-				kids: ['Clothing', 'Shoes', 'Baby Shop', 'Housewares', 'Accessories', 'Eyewear', 'Bags', 'Watches', 'Sporting Goods', 'Beauty', 'Jewelry', 'Electronics'],
-				special: ['Fashion', 'Shop', 'Golf', 'Outdoor', 'Rideshop', 'Running', 'Shop By', 'Wedding', 'Western']
-			};
-			var apiKey = 'a73121520492f88dc3d33daf2103d7574f1a3166';
-			var searchApiUrl = 'http://api.zappos.com/Search';
-			var budgetVariation = "10";
-			var currency = { country: 'United States', symbol: '$', name: 'dollars' };
+			e.preventDefault();
+			count = targetElement.find('#inputCount').val();
+			budget = targetElement.find('#inputBudget').val();
 
-			function randomizedArray(arrLength) {
-				var arr = [], i;
-				for (i = 0; i < arrLength; i++) {
-					arr[i] = i;
-				}
-
-				arr.sort(function () {
-					return Math.random() - 0.5;
-				});
-				return arr;
+			count = parseInt(count);
+			budget = parseInt(budget);
+			targetElement.find('.error').html('');
+			if(isNaN(count)) {
+				targetElement.find('#inputCount').siblings('.error').html('Enter number Eg: 3');
+				return;
+				} else if(isNaN(parseInt(budget))) {
+				targetElement.find('#inputBudget').siblings('.error').html('Enter number Eg: 100');
+				return;
 			}
 
-			//events binding
-			$("#GetPacksForm").submit(function(e) {
-				var targetElement = $(e.target), count, budget;
-
-				e.preventDefault();
-				count = targetElement.find('#inputCount').val();
-				budget = targetElement.find('#inputBudget').val();
-
-				count = parseInt(count);
-				budget = parseInt(budget);
-				targetElement.find('.error').html('');
-				if(isNaN(count)) {
-					targetElement.find('#inputCount').siblings('.error').html('Enter number Eg: 3');
-					return;
-				} else if(isNaN(parseInt(budget))) {
-					targetElement.find('#inputBudget').siblings('.error').html('Enter number Eg: 100');
-					return;
-				}
-
-				myapp.show(count, budget);
-			});
-
-			//myapp code
-			$.extend(myapp, {
-
-				//types: ['women', 'men', 'kids'],
-				types: ['women'],
-
-				show: function(count, budget) {
-					var key, tmp;
-
-					key = count + "-" + budget;
-					this.data = $.jStorage.get(key);
-					if(!this.data) {
-						//this.fetchData(count,budget);
-					} else {
-						console.log(this.data);
-						this.displayResult(this.data, count);
-					}
-				},
-
-				displayResult: function(data, count) {
-					var randomIndex = randomizedArray(data.currentResultCount),
-						displayData = {}, totalPrice = 0, i, tmp;
-
-					displayData.category = data.originalTerm;
-					displayData.products = [];
-					for(i=0; i<count; i++) {
-						tmp = data.results[randomIndex[i]];
-						displayData.products.push(tmp);
-						totalPrice = totalPrice + parseFloat(tmp.price.substring(1));
-					}
-
-					tmp = displayData.products.length;
-					if(tmp == 0) {
-						displayData.message = "OOPS!! our system could not find any package for you. please try changing your budget and count.";
-					} else if(tmp < count) {
-						displayData.message = "AFRAID!! our system could not find as many products as you want. Try playing around with your budget and count.";
-					}
-
-					displayData.totalPrice = currency.symbol + totalPrice;
-
-					$('#Packs').html('').mustache('Product-list-template', displayData);
-				},
-
-				fetchData: function(count,budget) {
-					var i = 0, j =0, url, tmp, type, category, randomNoArr, that;
-
-					function getData(term) {
-						var priceRange, tmp, priceRangeString, productTypeString;
-
-							/*
-						switch(true) {
-							case (budget > 0 && budget <= 25):
-								sortType = "asc";
-								filterType = "$50.00 and Under";
-								break;
-							case (budget > 25 && budget <= 50):
-								sortType = "desc";
-								filterType = "$50.00 and Under";
-								break;
-							case (budget > 50 && budget <= 100):
-								sortType = "desc";
-								filterType = "$100.00 and Under";
-								break;
-							case (budget > 100 && budget <= 200):
-								sortType = "desc";
-								filterType = "$200.00 and Under";
-								break;
-							case (budget > 200 && budget <= 1000):
-								sortType = "asc";
-								filterType = "$200.00 and Over";
-								break;
-							default:
-								sortType = "desc";
-								filterType = "$200.00 and Over";
-								break;
-						}
-							*/
-
-						productTypeString = '';
-						tmp = apiKeywords[term];
-						for(i=0; i < tmp.length; i++) {
-							if(i != 0)
-								productTypeString += ',"' + tmp[i] + '"';
-							else
-								productTypeString += '"' + tmp[i] + '"';
-						}
-
-						tmp = (budget*budgetVariation)/100;
-						priceRange = Math.ceil(tmp/count);
-
-						priceRangeString = '"' + budget + '"';
-						for(i=0; i < Math.ceil(priceRange/2); i++) {
-							priceRangeString += ',"' + (budget-i-1) + '"';
-							priceRangeString += ',"' + (budget+i+1) + '"';
-						}
-
-						console.log(productTypeString);
-
-						//return $.get(searchApiUrl, {sort:'{"price":"' + sortType + '"}',term:term,limit:100,filters:'{"priceFacet":["' + filterType + '"], "priceSort":[' + priceRangeString + ']}',key:apiKey}, null, 'jsonp');
-						return $.get(searchApiUrl, {term:term,limit:100,filters:'{"productTypeFacet":[' + productTypeString + '], "priceSort":[' + priceRangeString + ']}',key:apiKey}, null, 'jsonp');
-					}
-
-					randomNoArr = randomizedArray(5);
-					that = this;
-					for(i = 0; i< this.types.length; i++) {
-						type = this.types[i];
-						category = apiKeywords[type];
-						tmp = category.length;
-						$.when(
-						getData(type)
-						).done(function(data){
-							var tmp;
-							console.log(data);
-							tmp = count + "-" + budget;
-							that.data[tmp] = data;
-							$.jStorage.set(tmp, data, { ttl: 86400000 });
-						});
-					}
-
-				}
-			});
-
-		}(myapp || {}));
+			targetElement.find('.btn-default').show();
+			myapp.show(count, budget);
+		});
 	</script>
+
 </body></html>
