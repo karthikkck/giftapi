@@ -1,36 +1,47 @@
 (function(myapp) {
 	$.extend(myapp, {
 
-		types: ['women', 'men', 'kids'],
+		types: (function() {
+			return Object.keys(myapp.settings.apiKeywords);
+		}()),
 
 		show: function(count, budget) {
-			var i, key, tmp;
+			var i, key, tmp, that = this;
 
 			key = count + "-" + budget;
-			this.data = $.jStorage.get(key);
+
+			function showCallback(types) {
+				console.log(that.data);
+				that.displayResult(that.data[key], count, types);
+			};
+
+			//fetch data from localstorage
+			if(!this.data || !this.data[key])
+				this.data = $.jStorage.get(key);
+
 			if(!this.data) {
 				this.data = {};
-
 				for(i = 0; i < this.types.length; i++) {
-					this.fetchData(count, budget, this.types[i]);
+					this.fetchData(count, budget, this.types[i], showCallback);
 				}
 			} else {
-				console.log(this.data);
-				this.displayResult(this.data[key], count);
+				showCallback();
 			}
 		},
 
-		displayResult: function(data, count) {
+		displayResult: function(data, count, types) {
 			var randomIndex, i, actualData, tmp,
 			displayData = {}, totalPrice, html = '';
 
-			for(j=0; j<this.types.length; j++) {
+			types = types || this.types;
+
+			for(j=0; j<types.length; j++) {
 				totalPrice = 0;
-				actualData = data[this.types[j]];
+				actualData = data[types[j]];
 				randomIndex = this.library.randomizedArray(actualData.currentResultCount);
 				displayData.category = actualData.originalTerm;
 				displayData.products = [];
-				for(i=0; i<count; i++) {
+				for(i=0; i < count && i < randomIndex.length; i++) {
 					tmp = actualData.results[randomIndex[i]];
 					displayData.products.push(tmp);
 					totalPrice = totalPrice + parseFloat(tmp.price.substring(1));
@@ -38,21 +49,30 @@
 
 				tmp = displayData.products.length;
 				if(tmp == 0) {
-					displayData.message = "OOPS!! our system could not find any package for you. please try changing your budget and count.";
+					displayData.message = "OOPS!! our system could not find any package for you in this category. please try changing your budget and count.";
 				} else if(tmp < count) {
 					displayData.message = "AFRAID!! our system could not find as many products as you want. Try playing around with your budget and count.";
 				}
 
 				displayData.totalPrice = this.settings.currency.symbol + totalPrice;
 
-				html += $.Mustache.render('Product-list-template', displayData);
+				html = $.Mustache.render('Product-list-template', displayData);
+
+				tmp = $('#Packs').find('#' + types[j]);
+				if(tmp.length > 0) {
+					tmp.html(html);
+				} else {
+					$('#Packs')
+					.append('<div id="' + types[j] + '"></div>')
+					.find('#' + types[j]).html(html);
+				}
 
 			}
-			$('#Packs').html(html);
 		},
 
-		fetchData: function(count,budget, type) {
-			var i = 0, j =0, url, tmp, that = this;
+		fetchData: function(count,budget, type, showCallback) {
+			var i = 0, j =0, url, tmp, that = this,
+				eachProductPrice = Math.ceil(budget/count);
 
 			function getData(term) {
 				var priceRange, tmp, priceRangeString, productTypeString,
@@ -66,13 +86,13 @@
 						productTypeString += '"' + tmp[i] + '"';
 				}
 
-				tmp = (budget*that.settings.budgetVariation)/100;
+				tmp = (eachProductPrice*that.settings.budgetVariation)/100;
 				priceRange = Math.ceil(tmp/count);
 
-				priceRangeString = '"' + budget + '"';
+				priceRangeString = '"' + eachProductPrice + '"';
 				for(i=0; i < Math.ceil(priceRange/2); i++) {
-					priceRangeString += ',"' + (budget-i-1) + '"';
-					priceRangeString += ',"' + (budget+i+1) + '"';
+					priceRangeString += ',"' + (eachProductPrice-i-1) + '"';
+					priceRangeString += ',"' + (eachProductPrice+i+1) + '"';
 				}
 
 				return $.get(that.settings.searchApiUrl, {term:term,limit:100,filters:'{"productTypeFacet":[' + productTypeString + '], "priceSort":[' + priceRangeString + ']}',key:that.settings.apiKey}, null, 'jsonp');
@@ -87,6 +107,7 @@
 				that.data[key] = that.data[key] || {};
 				that.data[key][data.originalTerm] = data;
 				$.jStorage.set(key, that.data, { ttl: 86400000 });
+				showCallback([data.originalTerm]);
 			});
 		}
 	});
