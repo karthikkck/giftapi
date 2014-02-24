@@ -19,7 +19,6 @@
 			//callback function
 			//this is called once every type of data is fetched from api
 			function showCallback(types) {
-				console.log(that.data);
 				that.displayResult(that.data[key], count, types);
 			};
 
@@ -137,7 +136,6 @@
 				getData(type)
 			).done(function(data){
 				var key;
-				console.log(data);
 
 				//storage format data['3-150']['women']
 				key = count + "-" + budget;
