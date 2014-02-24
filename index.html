@@ -34,8 +34,6 @@
         </div>
       </div>
 
-      <!-- Forms
-      ================================================== -->
       <div class="bs-docs-section">
         <div class="row">
           <div class="col-lg-12">
@@ -97,10 +95,10 @@
 		<div class="row">
 
 		{{#products}}
-          <div class="col-lg-3">
+          <div class="col-lg-2">
             <div class="well">
 				<ul class="list-unstyled">
-					<li><img src="{{thumbnailImageUrl}}"></li>
+					<li style="text-align: center"><img src="{{thumbnailImageUrl}}"></li>
 					<li><label>Name:</label>{{productName}}</li>
 					<li><label>Price:</label>{{price}}</li>
 					<li><a target="_blank" href="{{productUrl}}">details</a></li>
@@ -113,6 +111,7 @@
 	</script>
 
 
+	<!-- jQuery from cdn -->
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
 
 	<!-- mustache templating -->
@@ -122,6 +121,8 @@
 	<!-- localstorage library -->
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/json2/20110223/json2.js"></script>
 	<script src="https://raw.github.com/andris9/jStorage/master/jstorage.js"></script>
+
+	<!-- application configruation file and main file -->
 	<script src="assets/js/config.js"></script>
 	<script src="assets/js/main.js"></script>
 
@@ -139,6 +140,8 @@
 
 			count = parseInt(count);
 			budget = parseInt(budget);
+
+			//form validation
 			targetElement.find('.error').html('');
 			if(isNaN(count)) {
 				targetElement.find('#inputCount').siblings('.error').html('Enter number Eg: 3');
@@ -148,7 +151,10 @@
 				return;
 			}
 
+			//show the button which gets new packages from the local data stored
 			targetElement.find('.btn-default').show();
+
+			//call the show function of the application
 			myapp.show(count, budget);
 		});
 	</script>
